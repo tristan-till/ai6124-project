@@ -1,0 +1,5 @@
+logs/
+plots/
+runs/
+venv/
+weights/
