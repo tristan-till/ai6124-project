@@ -1,56 +1,63 @@
-import numpy as np
-
 import torch
 
 import utils.data as data
+import utils.evo_data as evo_data
+import utils.params as params
 
-from utils.backbone import GRULSTMAttentionModel
-from utils.controller import EvolutionController
+from train_baseline import train_baseline
+from test_baseline import test_baseline
+from train_backbone import train_model
+from test_backbone import test_model
+from finetune_backbone import finetune
+from train_head import train_head
+from test_head import test_head
 
-def get_target(stock, start_date, end_date=None, phase=1):
-    target_data = data.get_data_with_signal(stock, start_date, end_date)
-    close_d = target_data[f'{stock}_close_d']
-    future_close_d = close_d.shift(-phase)
-    future_close_d = future_close_d.dropna()
-    x = future_close_d.values
-    return x
 
 def main():
-
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"\nUsing device: {device}")
 
-    start_date = "2020-01-01"
-    end_date = "2024-11-01"
-    target = "XOM"
-    phase=30
+    dataset, num_features = data.prepare_data()
+    train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
+    train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
 
-    df = data.get_data_with_signal(target, start_date, end_date)
-    prices = np.array(df['XOM_Close'].values[-100:])
+    train_baseline(num_features, train_loader, val_loader, device)
+    test_baseline(num_features, test_dataset, test_loader, device)
 
-    f1 = df['XOM_close_d'].values[-100:]
-    f2 = df['XOM_macd'].values[-100:]
-    f3 = df['XOM_Volume'].values[-100:]
-    f4 = df['XOM_roc'].values[-100:]
-    target_y = get_target(target, start_date, end_date, phase=phase)[-100:]
-    X = np.stack([f1, f2, f3, f4, target_y], axis=1)
-    
+    train_model(num_features, train_loader, val_loader, device)
+    test_model(num_features, test_dataset, test_loader, device)
 
-    # num_features = 96 
+    finetune(device)
 
-    # gru_size=512
-    # lstm_size=256
-    # attention_size=128
-    # num_layers = 4
-    # predictor = GRULSTMAttentionModel(
-    #     input_size=num_features, 
-    #     gru_size=gru_size, 
-    #     lstm_size=lstm_size, 
-    #     attention_size=attention_size,
-    #     num_layers=num_layers
-    #     ).to(device)
-    controller = EvolutionController(10, 10)
-    controller.train(X, prices)
+    in_train, in_test, p_train, p_test = evo_data.get_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET)
+    train_head(in_train, p_train, device)
+    test_head(in_test, p_test, device=device, plot_path=params.EVO_PLOT)
+
+    _, in_test, _, p_test = evo_data.get_data(device, model=params.FT_BEST_MODEL_PATH, target=params.FT_TARGET)
+    test_head(in_test, p_test, device=device, plot_path=params.FT_EVO_PLOT)
+
 
 if __name__ == '__main__':
     main()
+
+'''
+# BACKBONE #
+get_backbone_data()
+train_baseline_backbone()
+train_backbone()
+evaluate_backbone()
+
+# HEAD #
+get_head_data()
+train_baseline_head()
+train_head()
+evaluate_head()
+
+# TRANSFER LEARNING #
+get_backbone_data()
+train_backbone()
+get_head_data()
+# train_head()
+evaluate_backbone()
+evaluate_head()
+'''
