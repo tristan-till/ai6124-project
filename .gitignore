@@ -3,3 +3,8 @@ plots/
 runs/
 venv/
 weights/
+
+debug.py
+
+__pycache__/
+utils/__pycache__/

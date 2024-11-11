@@ -1,40 +1,69 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+
 import numpy as np
+import torch
 
 import utils.plot as plot
 import utils.helpers as helpers
+import utils.objectives as objectives
+import utils.params as params
 
 from utils.evo import crossover_genomes
 from utils.manager import PortfolioManager
 
 class EvolutionController:
-    def __init__(self, population_size=10, num_generations=10, elitism_threshold=0.1):
+    def __init__(self, device, num_inputs, population_size=params.POPULATION_SIZE, num_generations=params.NUM_GENERATIONS, episode_length=params.EPISODE_LENGTH, elitism_threshold=params.ELITISM_THRESHOLD, objective=lambda x: objectives.cumulative_return(x)):
+        self.device = device
+        self.num_inputs = num_inputs
         self.population_size = population_size
         self.num_generations = num_generations
+        self.episode_length = episode_length
         self.elitism_threshold = elitism_threshold
+        self.objective = objective
         
         self.elitist_size = int(np.ceil(population_size * elitism_threshold))
         self.population = self.init_population()
 
+        self.max_reward = -100
+        self.top_genome = None
+
     def init_population(self):
         population = []
         for _ in range(self.population_size):
-            manager = PortfolioManager(100, 0.02, 5, 2, 3, 3, mutation_rate=0.1, rule_operator=lambda x: sum(x) / len(x))
+            manager = PortfolioManager(device=self.device, num_inputs=self.num_inputs, rule_operator=lambda x: sum(x) / len(x))
             population.append(manager)
         return population
     
-    def rewards(self, price):
+    def returns(self, price):
+        returns = torch.tensor([manager.get_value(price) for manager in self.population], device=self.device)
+        return returns
+
+    def histories(self):
+        histories = [manager.get_history() for manager in self.population]
+        return histories
+    
+    def rewards(self):
+        histories = self.histories()
         rewards = []
-        for manager in self.population:
-            reward = manager.get_value(price)
-            if len(manager.buys) < 1:
-                reward -= 25
-            elif len(manager.sells) < 1:
-                reward -= 5
-            rewards.append(reward)
-        return rewards
+        for history, buys, sells in histories:
+            reward = self.objective(history)
+            penalty = self.inactivity_penalty(reward, buys, sells)            
+            rewards.append(reward - penalty)
+        return torch.tensor(rewards, device=self.device)
+    
+    def inactivity_penalty(self, reward, buys, sells):
+        cumulative_penalty = 0
+        if len(buys) < 1:
+            cumulative_penalty += reward * 0.05 + 0.01
+        elif len(sells) < 1:
+            cumulative_penalty += reward * 0.01 + 0.01
+        return cumulative_penalty
     
     def crossover_pop(self, rewards):
         assert len(rewards) == len(self.population), "Rewards and population size must match"
+        if isinstance(rewards, torch.Tensor):
+            rewards = rewards.cpu().numpy()
         reward_sum = sum(rewards)
         fitness = [r / reward_sum for r in rewards]
         props = helpers.softmax(fitness)
@@ -50,8 +79,15 @@ class EvolutionController:
             manager.fis.mutate_genome()
             
     def forward(self, inp, price):
-        for manager in self.population:
+        inp_tensor = inp.clone().detach().to(self.device)
+        price_tensor = price.clone().detach().to(self.device)
+        def manager_forward(manager, inp, price):
             manager.forward(inp, price)
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(manager_forward, manager, inp_tensor, price_tensor) for manager in self.population]
+            
+            for future in as_completed(futures):
+                future.result()
             
     def get_elite_genomes(self, rewards):
         top_rewards= sorted(rewards, reverse=True)[:self.elitist_size]
@@ -67,26 +103,52 @@ class EvolutionController:
             portfolios.append(p)
             buys.append(b)
             sells.append(s)
-        plot.plot_generation(prices, portfolios, buys, sells, img_path)
+        plot.plot_generation(prices.cpu().numpy(), portfolios, buys, sells, img_path)
             
-            
-    def evo_step(self, inps, prices, gen_num):
-        assert len(inps) == len(prices), "Input and price length must match"
-        episode_length = len(inps)
-        for i in range(episode_length):
-            self.forward(inps[i], prices[i])
-        rewards = self.rewards(prices[-1])
-        print("Max episode reward: ", max(rewards))
-        self.plot_generation(prices, f"gen_{gen_num}")
-        elite_genomes = self.get_elite_genomes(rewards)
-        self.crossover_pop(rewards)
+    def evolve(self, rewards, max_reward):
+        elite_genomes = self.get_elite_genomes(rewards.cpu().tolist())
+        top_genome = elite_genomes[0]
+        
+        helpers.save_genome(top_genome, path=params.LAST_GENOME_PATH)
+        if self.max_reward < max_reward.item():
+            self.max_reward = max_reward.item()
+            self.top_genome = elite_genomes[0]
+            helpers.save_genome(self.top_genome, path=params.BEST_GENOME_PATH)
+        
+        self.crossover_pop(rewards.cpu().tolist())
         self.mutate_pop()
         for i in range(self.elitist_size):
             self.population[-i-1].fis.set_genome(elite_genomes[i])
+            
+    def evo_step(self, inps, prices, gen_num):
+        t1 = time.time()
+        assert len(inps) == len(prices), f"Input ({len(inps)}) and price length {len(prices)} must match"
+        start_idx = torch.randint(0, len(inps) - self.episode_length + 1, (1,)).item()
+        seq_inps = inps[start_idx:start_idx + self.episode_length]
+        seq_prices = prices[start_idx:start_idx + self.episode_length]
+
+        # Process the selected sequence
+        for i in range(self.episode_length):
+            self.forward(seq_inps[i], seq_prices[i])
+
+        returns = self.returns(seq_prices[-1])        
+        rewards = self.rewards()
+        
+        max_reward = torch.max(rewards)
+        print("Max episode return: ", max(returns).item())
+        print("Max episode reward: ", max_reward.item())
+        
+        self.plot_generation(seq_prices, f"gen_{gen_num}.png")
+        self.evolve(rewards, max_reward)
+        
         self.reset()
+        t2 = time.time()
+        print(f"Episode Duration: {(t2- t1):.2f}")
         
     def train(self, inps, prices):
         print("Starting training")
+        inps = torch.tensor(inps, device=self.device)
+        prices = torch.tensor(prices, device=self.device)
         for i in range(self.num_generations):
             print(f"Epoch {i+1} / {self.num_generations}")
             self.evo_step(inps, prices, i+1)

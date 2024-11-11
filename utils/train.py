@@ -1,8 +1,10 @@
 import torch
 
-import utils.helpers as helpers
+import utils.params as params
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, device, gradient_clip=1.0):
+def train_model(model, train_loader, val_loader, criterion, optimizer, device, 
+                best_model_path=params.BEST_MODEL_PATH, last_model_path=params.LAST_MODEL_PATH, 
+                num_epochs=params.NUM_EPOCHS, gradient_clip=params.GRADIENT_CLIP):
     best_val_loss = float('inf')
     
     for epoch in range(num_epochs):
@@ -24,7 +26,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                 
                 loss.backward()
                 
-                # Gradient clipping
                 torch.nn.utils.clip_grad_norm_(model.parameters(), gradient_clip)                
                 optimizer.step()
                 train_loss += loss.item()
@@ -33,7 +34,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
                 print(f"Error in batch {batch_idx}: {str(e)}")
                 continue
         
-        # Validation
         model.eval()
         val_loss = 0
         with torch.no_grad():
@@ -51,6 +51,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), 'best_model.pth')
+            torch.save(model.state_dict(), f"weights/{best_model_path}")
 
-        torch.save(model.state_dict(), 'last.pth')
+        torch.save(model.state_dict(), f"weights/{last_model_path}")

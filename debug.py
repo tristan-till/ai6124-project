@@ -1,10 +1,15 @@
-from utils.manager import PortfolioManager
+import time
+import torch
+
+import utils.params as params
+import utils.evo_data as evo_data
+
+from utils.controller import EvolutionController
 
 def main():
-    manager = PortfolioManager(100, 0.0, 4, 2, 3, 3)
-    manager.print_portfolio(1)
-    manager.sell(30, 1)    
-    manager.print_portfolio(1)
+    device='cuda'
+    in_train, p_train = evo_data.get_train_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET)
+
 
 if __name__ == '__main__':
     main()
