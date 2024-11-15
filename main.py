@@ -18,21 +18,21 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"\nUsing device: {device}")
 
-    # dataset, num_features = data.prepare_data()
-    # train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
-    # train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
+    dataset, num_features = data.prepare_data()
+    train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
+    train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
 
-    # train_baseline(num_features, train_loader, val_loader, device)
-    # test_backbone(num_features, test_dataset, test_loader, device, params.BL_BEST_MODEL_PATH, get_baseline, params.PLOT_BASELINE)
+    train_baseline(num_features, train_loader, val_loader, device)
+    test_backbone(num_features, test_dataset, test_loader, device, params.BL_BEST_MODEL_PATH, get_baseline, params.PLOT_BASELINE)
 
-    # train_model(num_features, train_loader, val_loader, device)
-    # test_backbone(num_features, test_dataset, test_loader, device)
+    train_model(num_features, train_loader, val_loader, device)
+    test_backbone(num_features, test_dataset, test_loader, device)
 
-    # finetune(device)
-    # finetune(device, params.BL_BEST_MODEL_PATH, get_baseline, params.FT_BL_BEST_MODEL_PATH, params.FT_BL_LAST_MODEL_PATH, params.FT_PLOT_BASELINE)
+    finetune(device)
+    finetune(device, model_path=params.BL_BEST_MODEL_PATH, model_loader=get_baseline, best_model_path=params.FT_BL_BEST_MODEL_PATH, last_model_path=params.FT_BL_LAST_MODEL_PATH, plot_name=params.FT_PLOT_BASELINE)
 
-    # in_train, p_train = evo_data.get_train_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET)
-    # train_head(in_train, p_train, device)
+    in_train, p_train = evo_data.get_train_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET)
+    train_head(in_train, p_train, device)
     test_head(device)
     test_head(device, params.FT_TARGET, params.FT_BEST_MODEL_PATH, params.FT_BL_BEST_MODEL_PATH, plot_path=params.FT_EVO_PLOT)
 

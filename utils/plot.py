@@ -41,6 +41,7 @@ def plot_generation(prices, portfolios, buys, sells, img_name="head.png"):
             ax1.scatter(s, portfolio[s], color='r', marker='v', s=15, zorder=2)
 
     plt.savefig(f"{params.PLOT_PATH}/{img_name}", dpi=150)
+    plt.close()
     
 
 def main():
