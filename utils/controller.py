@@ -13,7 +13,10 @@ from utils.evo import crossover_genomes
 from utils.manager import PortfolioManager
 
 class EvolutionController:
-    def __init__(self, device, num_inputs, population_size=params.POPULATION_SIZE, num_generations=params.NUM_GENERATIONS, episode_length=params.EPISODE_LENGTH, elitism_threshold=params.ELITISM_THRESHOLD, objective=lambda x: objectives.cumulative_return(x)):
+    def __init__(self, device, num_inputs, 
+                 population_size=params.POPULATION_SIZE, num_generations=params.NUM_GENERATIONS, episode_length=params.EPISODE_LENGTH, 
+                 elitism_threshold=params.ELITISM_THRESHOLD, objective=lambda x: objectives.cumulative_return(x),
+                 best_model_path=params.BEST_GENOME_PATH, last_model_path=params.LAST_GENOME_PATH, plt_path=params.CR_PLOTS):
         self.device = device
         self.num_inputs = num_inputs
         self.population_size = population_size
@@ -27,6 +30,10 @@ class EvolutionController:
 
         self.max_reward = -100
         self.top_genome = None
+
+        self.best_model_path = best_model_path
+        self.last_model_path = last_model_path
+        self.plt_path = plt_path
 
     def init_population(self):
         population = []
@@ -109,11 +116,11 @@ class EvolutionController:
         elite_genomes = self.get_elite_genomes(rewards.cpu().tolist())
         top_genome = elite_genomes[0]
         
-        helpers.save_genome(top_genome, path=params.LAST_GENOME_PATH)
+        helpers.save_genome(top_genome, path=self.last_model_path)
         if self.max_reward < max_reward.item():
             self.max_reward = max_reward.item()
             self.top_genome = elite_genomes[0]
-            helpers.save_genome(self.top_genome, path=params.BEST_GENOME_PATH)
+            helpers.save_genome(self.top_genome, path=self.best_model_path)
         
         self.crossover_pop(rewards.cpu().tolist())
         self.mutate_pop()
@@ -138,7 +145,7 @@ class EvolutionController:
         print("Max episode return: ", max(returns).item())
         print("Max episode reward: ", max_reward.item())
         
-        self.plot_generation(seq_prices, f"gen_{gen_num}.png")
+        self.plot_generation(seq_prices, f"{self.plt_path}/gen_{gen_num}.png")
         self.evolve(rewards, max_reward)
         
         self.reset()
@@ -147,8 +154,10 @@ class EvolutionController:
         
     def train(self, inps, prices):
         print("Starting training")
-        inps = torch.tensor(inps, device=self.device)
-        prices = torch.tensor(prices, device=self.device)
+        if not isinstance(inps, torch.Tensor):
+            inps = torch.tensor(inps).to(self.device)
+        if not isinstance(prices, torch.Tensor):
+            prices = torch.tensor(prices).to(self.device)
         for i in range(self.num_generations):
             print(f"Epoch {i+1} / {self.num_generations}")
             self.evo_step(inps, prices, i+1)

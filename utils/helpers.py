@@ -152,6 +152,23 @@ def evaluate_all_mfs(mfs, x, device):
         ))
     return torch.stack(results)
 
+def centroids(out_mfs, ra, consequences, device):
+    x_range = torch.linspace(0, 1, params.NUM_POINTS, device=device).to(device)
+    centroids = torch.zeros((params.NUM_OUTPUTS)).to(device)
+    for i, cons in enumerate(consequences):
+        out_agg = torch.zeros((params.NUM_POINTS)).to(device)
+        for j, c in enumerate(cons):
+            mf = out_mfs[i][c]
+            cut = mf(ra[j])
+            f = lambda x: torch.fmin(mf(x), cut) 
+            out_agg = torch.max(torch.Tensor([f(x) for x in x_range]).to(device), out_agg).to(device)
+        out_agg = torch.pow(out_agg, params.POW)
+        numerator = torch.trapz(x_range * out_agg, x_range)
+        denominator = torch.trapz(out_agg, x_range)
+        centroid = numerator / denominator if denominator != 0 else 0.0
+        centroids[i] = centroid
+    return centroids
+
 def softmax(x):
     return np.exp(x) / np.sum(np.exp(x), axis=0)
 

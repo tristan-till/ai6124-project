@@ -27,18 +27,24 @@ class PortfolioManager:
         self.buys = torch.empty(0, device=device, dtype=torch.int32)
         self.sells = torch.empty(0, device=device, dtype=torch.int32)
         
-    def forward(self, inputs, price):
+    def forward(self, inputs, price, act=True):
         inputs = torch.cat((inputs, self.liquidity(price).unsqueeze(0))).to(self.device)
         
         actions = self.fis.forward(inputs)
-        action = actions[0] - actions[1]
-        is_significant = torch.abs(action) > self.significance_threshold
+        if act:
+            self.act(actions, price)
+        return actions
+    
+    def act(self, actions, price):
+        sell = actions[0]
+        hold = actions[1]
+        buy = actions[2]
 
-        if action > 0 and is_significant:
-            amount = torch.floor(self.cash * torch.abs(action) / price).to(torch.int32)
+        if buy > hold and buy > sell:
+            amount = torch.floor(self.cash * buy / price).to(torch.int32)
             self.buy(amount, price)
-        elif is_significant:
-            amount = torch.floor(torch.abs(action) * self.num_stocks).to(torch.int32)
+        elif sell > hold and sell > buy:
+            amount = torch.floor(sell * self.num_stocks).to(torch.int32)
             self.sell(amount, price)
 
         value = self.get_value(price)
