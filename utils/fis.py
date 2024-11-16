@@ -7,6 +7,7 @@ import torch
 import utils.helpers as helpers
 import utils.evo as evo
 import utils.params as params
+import utils.benchmark as benchmark
 
 class GenFIS:
     def __init__(self, device, num_inputs, mutation_rate=params.MUTATION_RATE, rule_operator=lambda x: max(x)):
@@ -120,6 +121,10 @@ class GenFIS:
 
     def load_genome(self, path=params.BEST_GENOME_PATH):
         genome = helpers.load_genome(path)
+        self.set_genome(genome)
+    
+    def benchmark_genome(self):
+        genome = benchmark.benchmark_genome()
         self.set_genome(genome)
 
     def explain(self):
