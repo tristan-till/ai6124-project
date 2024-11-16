@@ -6,6 +6,7 @@ import utils.params as params
 
 class AggregationLayer():
     def __init__(self, device, num_inputs):
+        self.device = device
         self.managers = [PortfolioManager(device=device, num_inputs=num_inputs) for i in range(params.NUM_OBJECTIVES)]
         self.manager = PortfolioManager(device=device, num_inputs=0)
         self.init_managers()
@@ -16,7 +17,7 @@ class AggregationLayer():
         self.managers[2].fis.load_genome(params.BEST_MD_GENOME_PATH)
 
     def forward(self, inputs, price):
-        decisions = torch.zeros(len(self.managers), params.NUM_OUTPUTS)
+        decisions = torch.zeros((len(self.managers), params.NUM_OUTPUTS))
         for i, manager in enumerate(self.managers):
             actions = manager.forward(inputs, price, act=False)
             decisions[i] = actions

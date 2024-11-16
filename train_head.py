@@ -15,7 +15,7 @@ def train_head(inputs, prices, device, objective=objectives.cumulative_return, b
 
 if __name__ == '__main__':
     device='cuda'
-    print('loading data...')
-    in_train, in_test, p_train, p_test = evo_data.get_data(device)
-    print('loaded data!')
-    train_head(in_train, p_train, device)
+    in_train, p_train = evo_data.get_train_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET)
+    train_head(in_train, p_train, device, objective=objectives.cumulative_return, best_model_path=params.BEST_CR_GENOME_PATH, last_model_path=params.LAST_CR_GENOME_PATH, plt_path=params.CR_PLOTS)
+    train_head(in_train, p_train, device, objective=objectives.sharpe_ratio, best_model_path=params.BEST_SR_GENOME_PATH, last_model_path=params.LAST_SR_GENOME_PATH, plt_path=params.SR_PLOTS)
+    train_head(in_train, p_train, device, objective=objectives.maximum_drawdown, best_model_path=params.BEST_MD_GENOME_PATH, last_model_path=params.LAST_MD_GENOME_PATH, plt_path=params.MD_PLOTS)

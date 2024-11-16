@@ -6,17 +6,14 @@ from utils.fis import GenFIS
 import utils.params as params
 
 class PortfolioManager:
-    def __init__(self, device, num_inputs, 
-                 num_outputs=params.NUM_OUTPUTS, num_in_mf=params.NUM_IN_MF, num_out_mf=params.NUM_OUT_MF, 
-                 cash=params.INITIAL_CASH, stocks=params.INITIAL_STOCKS, transaction_fee=params.TRANSACTION_FEE,
-                 mutation_rate=params.MUTATION_RATE, rule_operator=lambda x: sum(x) / len(x)):
+    def __init__(self, device, num_inputs, cash=params.INITIAL_CASH, stocks=params.INITIAL_STOCKS, transaction_fee=params.TRANSACTION_FEE, rule_operator=lambda x: sum(x) / len(x)):
         self.device = device
         self.transaction_fee = transaction_fee
 
         self.num_default_inputs = params.NUM_SELF_INPUTS
         self.significance_threshold = params.SIGNIFICANCE_THRESHOLD
         
-        self.fis = GenFIS(device, num_inputs + self.num_default_inputs, num_outputs, num_in_mf, num_out_mf, mutation_rate, rule_operator)
+        self.fis = GenFIS(device=device, num_inputs=num_inputs + self.num_default_inputs, rule_operator=rule_operator)
         
         self.cash = torch.tensor(cash, device=device, dtype=torch.float32)
         self.num_stocks = torch.tensor(stocks, device=device, dtype=torch.float32)
@@ -29,7 +26,6 @@ class PortfolioManager:
         
     def forward(self, inputs, price, act=True):
         inputs = torch.cat((inputs, self.liquidity(price).unsqueeze(0))).to(self.device)
-        
         actions = self.fis.forward(inputs)
         if act:
             self.act(actions, price)
