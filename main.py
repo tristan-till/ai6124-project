@@ -20,10 +20,10 @@ def main():
     print(f"\nUsing device: {device}")
 
     dataset, num_features = data.prepare_data()
-    train_dataset, test_dataset = data.get_datasets(dataset, use_folds=True)
-    # train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
+    train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
+    train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
 
-    # train_baseline(num_features, train_loader, val_loader, device)
+    train_baseline(num_features, train_loader, val_loader, device)
     # test_backbone(num_features, test_dataset, test_loader, device, params.BL_BEST_MODEL_PATH, get_baseline, params.PLOT_BASELINE)
 
     # train_model(num_features, train_loader, val_loader, device)

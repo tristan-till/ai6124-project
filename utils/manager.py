@@ -4,9 +4,11 @@ import torch
 from utils.fis import GenFIS
 
 import utils.params as params
+import utils.enums as enums
+import utils.objectives as objectives
 
 class PortfolioManager:
-    def __init__(self, device, num_inputs, cash=params.INITIAL_CASH, stocks=params.INITIAL_STOCKS, transaction_fee=params.TRANSACTION_FEE, rule_operator=lambda x: sum(x) / len(x)):
+    def __init__(self, device, num_inputs, cash=params.INITIAL_CASH, stocks=params.INITIAL_STOCKS, transaction_fee=params.TRANSACTION_FEE, rule_operator=lambda x: sum(x) / len(x), mode=enums.Mode.TRAIN):
         self.device = device
         self.transaction_fee = transaction_fee
 
@@ -23,6 +25,7 @@ class PortfolioManager:
         self.history = torch.empty(0, device=device, dtype=torch.float32)
         self.buys = torch.empty(0, device=device, dtype=torch.int32)
         self.sells = torch.empty(0, device=device, dtype=torch.int32)
+        self.mode = mode
         
     def forward(self, inputs, price, act=True):
         inputs = torch.cat((inputs, self.liquidity(price).unsqueeze(0))).to(self.device)
@@ -49,7 +52,7 @@ class PortfolioManager:
             
     def buy(self, amount, price):
         self.buys = torch.cat((self.buys, self.num_actions.unsqueeze(0)))
-        if self.cash < amount * price or amount < 1:
+        if (self.cash < amount * price or amount < 1) and self.mode == enums.Mode.TRAIN:
             self.cash -= 1
             return
         
@@ -58,7 +61,7 @@ class PortfolioManager:
         
     def sell(self, amount, price):
         self.sells = torch.cat((self.sells, self.num_actions.unsqueeze(0)))
-        if self.num_stocks < amount or amount < 1:
+        if (self.num_stocks < amount or amount < 1) and self.mode == enums.Mode.TRAIN:
             self.cash -= 1
             return
         
@@ -80,6 +83,12 @@ class PortfolioManager:
         print(f"Cash: {self.cash.item()}")
         print("-" * 50)
         return self.get_value(price)
+    
+    def eval(self):
+        gain = objectives.cumulative_return(self.history)
+        sharpe = objectives.sharpe_ratio(self.history)
+        max_dd = objectives.maximum_drawdown(self.history, train=False)
+        print(f"Buy and Hold: Gain={gain:.4f}, Sharpe={sharpe:.4f}, Max Drawdown={max_dd:.4f}")
     
     def get_history(self):
         return self.history, self.buys, self.sells

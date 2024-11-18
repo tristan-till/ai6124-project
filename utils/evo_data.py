@@ -104,6 +104,10 @@ def get_train_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET, m
     in_train, _, p_train, _ = load(model, target, device, model_loader)
     return in_train, p_train
 
+def get_test_data(device, model=params.BEST_MODEL_PATH, target=params.TARGET, model_loader=get_backbone):
+    _, in_test, _, p_test = load(model, target, device, model_loader)
+    return in_test, p_test
+
 def split_data(inputs, prices):
     split_index = int((1 - params.TEST_SIZE) * len(inputs))
     in_train, in_test = inputs[:split_index], inputs[split_index:]

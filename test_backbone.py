@@ -15,7 +15,6 @@ def test_backbone(num_features, test_dataset, test_loader, device, model_path=pa
     predictions, actuals = test.test_backbone(model, criterion, test_loader, device)
     plot.plot_backbone(predictions, actuals, img_name=img_name)
     benchmark.calculate_benchmark(test_dataset)
-    return predictions, actuals
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

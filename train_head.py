@@ -10,7 +10,6 @@ def train_head(inputs, prices, device, objective=objectives.cumulative_return, b
     _, num_inputs = inputs.shape
     controller = EvolutionController(num_inputs=num_inputs, device=device, objective=objective, best_model_path=best_model_path, last_model_path=last_model_path, plt_path=plt_path)
     controller.train(inputs, prices)
-    return controller
     
 
 if __name__ == '__main__':

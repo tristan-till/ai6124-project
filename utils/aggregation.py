@@ -3,12 +3,14 @@ from collections import Counter
 
 from utils.manager import PortfolioManager
 import utils.params as params
+import utils.enums as enums
 
 class AggregationLayer():
-    def __init__(self, device, num_inputs):
+    def __init__(self, device, num_inputs, mode=enums.Mode.TRAIN):
         self.device = device
-        self.managers = [PortfolioManager(device=device, num_inputs=num_inputs) for i in range(params.NUM_OBJECTIVES)]
-        self.manager = PortfolioManager(device=device, num_inputs=0)
+        self.mode = mode
+        self.managers = [PortfolioManager(device=device, num_inputs=num_inputs, mode=mode) for i in range(params.NUM_OBJECTIVES)]
+        self.manager = PortfolioManager(device=device, num_inputs=0, mode=mode)
         self.init_managers()
 
     def init_managers(self):
