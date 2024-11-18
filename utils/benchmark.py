@@ -29,8 +29,6 @@ import numpy as np
 
 def head_benchmarks(p_test, device):
     # p_test = p_test.cpu().numpy()
-    starting_value = params.INITIAL_CASH + params.INITIAL_STOCKS * p_test[0]
-    print(len(p_test), p_test[0], p_test[-1])
 
     ### Buy and Hold ###
     purchasable = math.floor(params.INITIAL_CASH / p_test[0])

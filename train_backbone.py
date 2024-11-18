@@ -24,5 +24,6 @@ if __name__ == '__main__':
 
     dataset, num_features = data.prepare_data()
     train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
-    # train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
-    train_for_folds(num_features, train_dataset, val_dataset, device)
+    train_loader, val_loader, test_loader = data.get_dataloaders(train_dataset, val_dataset, test_dataset)
+    train_backbone(get_backbone, num_features, train_loader, test_loader, device, params.BEST_MODEL_PATH, params.LAST_MODEL_PATH)
+    # train_for_folds(num_features, train_dataset, val_dataset, device)

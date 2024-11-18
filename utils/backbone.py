@@ -60,8 +60,11 @@ class GRULSTMAttentionModel(nn.Module):
         output = self.fc(context)
         return output
 
+
+from classes.custom_loss import HitRateLoss
 def get_backbone(num_features, device):
     model = GRULSTMAttentionModel(input_size=num_features).to(device)
     criterion = nn.MSELoss()
+    # criterion = HitRateLoss()
     optimizer = optim.Adam(model.parameters(), lr=params.LEARNING_RATE, weight_decay=params.WEIGHT_DECAY)
     return model, criterion, optimizer

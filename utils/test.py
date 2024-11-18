@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 def test_backbone(model, criterion, test_loader, device):
     test_loss = 0
@@ -16,4 +17,4 @@ def test_backbone(model, criterion, test_loader, device):
     
     test_loss /= len(test_loader)
     print(f'Test Loss: {test_loss:.4f}')
-    return predictions, actuals
+    return np.array(predictions), np.array(actuals)

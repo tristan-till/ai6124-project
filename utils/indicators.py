@@ -1,11 +1,19 @@
 from ta.momentum import RSIIndicator, ROCIndicator
 from ta.trend import MACD, EMAIndicator, SMAIndicator
 from ta.volatility import BollingerBands
+import numpy as np
 
-def get_rsi(close):
-    rsi = RSIIndicator(close)
+from classes.vrsi_indicator import VRSIIndicator
+
+def get_rsi(close, window):
+    rsi = RSIIndicator(close, window)
     rsi = rsi.rsi()
     return rsi
+
+def get_vrsi(close, volume, window):
+    vrsi = VRSIIndicator(close, volume, window=window)
+    vrsi = vrsi.vrsi()
+    return vrsi
 
 def get_roc(close):
     roc = ROCIndicator(close=close)
@@ -60,3 +68,17 @@ def get_bb_low(close):
     _, _, bb_low = calculate_bollinger_bands(close)
     bb_low.name = 'bb_l'
     return bb_low
+
+def get_ema(series, window):
+    return EMAIndicator(close=series, window=window).ema_indicator()
+
+def get_macd_incidator(close):
+    return MACD(close=close)
+
+def get_normalized_rsi(close, window, overbought_threshold, oversold_threshold):
+    rsi = get_rsi(close, window)
+    return normalize_rsi(rsi, overbought_threshold, oversold_threshold)
+
+def normalize_rsi(rsi, overbought_threshold, oversold_threshold):
+        rsi = rsi / 100
+        return np.clip((rsi - oversold_threshold) / (overbought_threshold - oversold_threshold), 0, 1)

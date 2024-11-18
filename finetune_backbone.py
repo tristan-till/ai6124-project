@@ -6,6 +6,7 @@ import utils.params as params
 import utils.benchmark as benchmark
 import utils.plot as plot
 import utils.train as train
+import utils.eval as evals
 
 from utils.backbone import get_backbone
 
@@ -18,11 +19,14 @@ def finetune(device, model_path=params.BEST_MODEL_PATH, model_loader=get_backbon
 
     model, criterion, optimizer = model_loader(num_features, device)
     model.load_state_dict(torch.load(f"weights/{model_path}", weights_only=True))
-    train.train_model(model, train_loader, val_loader, criterion, optimizer, device, best_model_path=best_model_path, last_model_path=last_model_path, num_epochs=num_epochs)
-    model.eval()
-    predictions, actuals = test.test_backbone(model, criterion, test_loader, device)
+    train.train_model(model, train_loader, test_loader, criterion, optimizer, device, best_model_path=best_model_path, last_model_path=last_model_path, num_epochs=num_epochs)
+    eval_model, criterion, optimizer = model_loader(num_features, device)
+    model.load_state_dict(torch.load(f"weights/{best_model_path}", weights_only=True))
+    eval_model.eval()
+    predictions, actuals = test.test_backbone(eval_model, criterion, test_loader, device)
     plot.plot_backbone(predictions, actuals, plot_name)
     benchmark.calculate_benchmark(test_dataset)
+    evals.evaluate_model(actuals, predictions, device)
     return predictions, actuals
 
 if __name__ == '__main__':
