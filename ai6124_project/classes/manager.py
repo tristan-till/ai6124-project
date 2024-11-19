@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from utils.fis import GenFIS
+from ai6124_project.classes.fis import GenFIS
 
 import utils.params as params
 import utils.enums as enums

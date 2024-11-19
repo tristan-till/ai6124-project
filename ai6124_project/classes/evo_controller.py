@@ -9,8 +9,8 @@ import utils.helpers as helpers
 import utils.objectives as objectives
 import utils.params as params
 
-from utils.evo import crossover_genomes
-from utils.manager import PortfolioManager
+from ai6124_project.utils.evo_utils import crossover_genomes
+from ai6124_project.classes.manager import PortfolioManager
 
 class EvolutionController:
     def __init__(self, device, num_inputs, 

@@ -1,23 +1,8 @@
 import torch
-import torch.optim as optim
 import torch.nn as nn
-import torch.nn.functional as F
 
-import utils.params as params
+import utils.params as params 
 
-class AttentionLayer(nn.Module):
-    def __init__(self, input_dim, attention_dim):
-        super(AttentionLayer, self).__init__()
-        self.attention_fc = nn.Linear(input_dim, attention_dim)
-        self.attention_vector = nn.Linear(attention_dim, 1)
-
-    def forward(self, x):
-        attn_scores = torch.tanh(self.attention_fc(x))
-        attn_weights = self.attention_vector(attn_scores)
-        attn_weights = F.softmax(attn_weights, dim=1)
-        context = torch.sum(attn_weights * x, dim=1)
-        return context, attn_weights.squeeze(-1)  
-    
 class GRULSTMAttentionModel(nn.Module):
     def __init__(self, input_size, 
                  gru_size=params.GRU_SIZE, gru_layers=params.GRU_LAYERS, 
@@ -59,12 +44,3 @@ class GRULSTMAttentionModel(nn.Module):
 
         output = self.fc(context)
         return output
-
-
-from classes.custom_loss import HitRateLoss
-def get_backbone(num_features, device):
-    model = GRULSTMAttentionModel(input_size=num_features).to(device)
-    criterion = nn.MSELoss()
-    # criterion = HitRateLoss()
-    optimizer = optim.Adam(model.parameters(), lr=params.LEARNING_RATE, weight_decay=params.WEIGHT_DECAY)
-    return model, criterion, optimizer

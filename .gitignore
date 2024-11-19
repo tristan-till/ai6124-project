@@ -7,8 +7,7 @@ weights/
 debug.py
 
 __pycache__/
-utils/__pycache__/
-classes/__pycache__/
+ai6124_project/utils/__pycache__/
+ai6124_project/classes/__pycache__/
 
 requirements.txt
-ai6124_project/

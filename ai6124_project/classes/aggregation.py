@@ -1,7 +1,6 @@
 import torch
-from collections import Counter
 
-from utils.manager import PortfolioManager
+from ai6124_project.classes.manager import PortfolioManager
 import utils.params as params
 import utils.enums as enums
 

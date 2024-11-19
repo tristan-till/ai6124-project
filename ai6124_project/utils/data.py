@@ -11,7 +11,7 @@ import utils.indicators as indicators
 import utils.params as params
 import utils.correlation as corr
 
-from utils.dataset import TimeSeriesDataset
+from ai6124_project.classes.dataset import TimeSeriesDataset
 
 seed = 42
 random.seed(seed)

@@ -2,6 +2,12 @@ import torch
 import torch.nn.functional as F
 from typing import Union
 
+import torch
+import numpy as np
+import math
+import utils.params as params
+import ai6124_project.utils.objectives as objectives
+
 def mean_squared_error(y_pred, y_true):
     if y_pred.numel() == 0 or y_true.numel() == 0:
         return torch.tensor(0.0, device=y_pred.device)
@@ -134,3 +140,82 @@ def evaluate_model(
     print_evals("Zero-Change", rw_mse, rw_mae, rw_mape, rw_rmse, rw_r_squared_value, rw_hr)
     print_evals("Mean-Change", mc_mse, mc_mae, mc_mape, mc_rmse, mc_r_squared_value, mc_hr)
     print_evals("Previous-Day-Change", pd_mse, pd_mae, pd_mape, pd_rmse, pd_r_squared_value, pd_hr)
+
+def head_benchmarks(p_test, device):
+    ### Buy and Hold ###
+    purchasable = math.floor(params.INITIAL_CASH / p_test[0])
+    cash = params.INITIAL_CASH - p_test[0] * purchasable * (1 + params.TRANSACTION_FEE)
+    stocks = purchasable + params.INITIAL_STOCKS
+    b_h_trajectory = torch.Tensor([cash + stocks * p for p in p_test]).to(device)
+
+    ### Risk-Free ###
+    annual_risk_free_rate = 0.035
+    trading_days_per_year = 252
+    daily_risk_free_return = (1 + annual_risk_free_rate) ** (1 / trading_days_per_year) - 1
+    initial_price = p_test[0]
+    risk_free_trajectory = torch.tensor([
+        initial_price * (1 + daily_risk_free_return) ** i for i in range(len(p_test))
+    ], device=device)
+
+    ### Cost-Averaging Strategy ###
+    avg_trading_days_per_month = 21
+    num_months = len(p_test) // avg_trading_days_per_month
+    monthly_investment = params.INITIAL_CASH / num_months
+    cash = params.INITIAL_CASH
+    stocks = params.INITIAL_STOCKS
+    ca_trajectory = []
+    for day in range(len(p_test)):
+        if day % avg_trading_days_per_month == 0:
+            purchasable = math.floor(monthly_investment / p_test[day])
+            stocks += purchasable
+            cash -= purchasable * p_test[day] * (1 + params.TRANSACTION_FEE)
+        ca_value = cash + stocks * p_test[day]
+        ca_trajectory.append(ca_value)
+    ca_trajectory = torch.Tensor(ca_trajectory).to(device)
+
+    b_h_gain = objectives.cumulative_return(b_h_trajectory)
+    risk_free_gain = objectives.cumulative_return(risk_free_trajectory)
+    ca_gain = objectives.cumulative_return(ca_trajectory)
+    # Calculate Sharpe ratios and max drawdowns
+    b_h_sharpe = objectives.sharpe_ratio(b_h_trajectory)
+    risk_free_sharpe = objectives.sharpe_ratio(risk_free_trajectory)
+    ca_sharpe = objectives.sharpe_ratio(ca_trajectory)
+
+    b_h_max_dd = objectives.maximum_drawdown(b_h_trajectory, train=False)
+    risk_free_max_dd = objectives.maximum_drawdown(risk_free_trajectory, train=False)
+    ca_max_dd = objectives.maximum_drawdown(ca_trajectory, train=False)
+
+    print(f"Buy and Hold: Gain={b_h_gain:.4f}, Sharpe={b_h_sharpe:.4f}, Max Drawdown={b_h_max_dd:.4f}")
+    print(f"Risk-Free: Gain={risk_free_gain:.4f}, Sharpe={risk_free_sharpe:.4f}, Max Drawdown={risk_free_max_dd:.4f}")
+    print(f"Cost Averaging: Gain={ca_gain:.4f}, Sharpe={ca_sharpe:.4f}, Max Drawdown={ca_max_dd:.4f}")
+    
+
+def benchmark_genome():
+    custom_gene1 = np.array([0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0])
+    custom_gene2 = np.array([0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0])
+    custom_gene3 = np.array([
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ])
+    custom_gene4 = np.array([
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+    ])
+    return [custom_gene1, custom_gene2, custom_gene3, custom_gene4]
+    

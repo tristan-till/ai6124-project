@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 import utils.helpers as helpers
-import utils.evo as evo
+import ai6124_project.utils.evo_utils as evo_utils
 import utils.params as params
 import utils.benchmark as benchmark
 
@@ -111,7 +111,7 @@ class GenFIS:
     def mutate_genome(self):
         genome = self.get_genome()
         for i in range(len(genome)):
-            mutation = evo.mutate_gene(genome[i], self.mutation_rate)
+            mutation = evo_utils.mutate_gene(genome[i], self.mutation_rate)
             genome[i] = mutation
         self.set_genome(genome)
 
