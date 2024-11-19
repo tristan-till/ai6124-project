@@ -1,21 +1,21 @@
 import torch
 
 from ai6124_project.classes.manager import PortfolioManager
-import utils.params as params
-import utils.enums as enums
+import ai6124_project.utils.params as params
+import ai6124_project.utils.enums as enums
 
 class AggregationLayer():
-    def __init__(self, device, num_inputs, mode=enums.Mode.TRAIN):
+    def __init__(self, device, num_inputs, mode=enums.Mode.TRAIN, genome_paths=[params.BEST_CR_GENOME_PATH, params.BEST_SR_GENOME_PATH, params.BEST_MD_GENOME_PATH]):
         self.device = device
         self.mode = mode
-        self.managers = [PortfolioManager(device=device, num_inputs=num_inputs, mode=mode) for i in range(params.NUM_OBJECTIVES)]
+        self.genome_paths = genome_paths
+        self.managers = [PortfolioManager(device=device, num_inputs=num_inputs, mode=mode) for i in range(len(genome_paths))]
         self.manager = PortfolioManager(device=device, num_inputs=0, mode=mode)
         self.init_managers()
 
     def init_managers(self):
-        self.managers[0].fis.load_genome(params.BEST_CR_GENOME_PATH)
-        self.managers[1].fis.load_genome(params.BEST_SR_GENOME_PATH)
-        self.managers[2].fis.load_genome(params.BEST_MD_GENOME_PATH)
+        for i, path in enumerate(self.genome_paths):
+            self.managers[i].fis.load_genome(path)
 
     def forward(self, inputs, price):
         decisions = torch.zeros((len(self.managers), params.NUM_OUTPUTS))
@@ -38,13 +38,19 @@ class AggregationLayer():
             manager.num_stocks = self.manager.num_stocks
 
     def vote(self, decisions):
-        primary_votes = torch.argmax(decisions, dim=1)
+        unanimous_mask = (decisions == decisions.max(dim=1, keepdim=True).values).sum(dim=1) == 1
+        filtered_decisions = decisions[unanimous_mask]
+        if filtered_decisions.size(0) == 0:
+            return 1, 1.0
+        primary_votes = torch.argmax(filtered_decisions, dim=1)
         n = len(primary_votes)
-        vote_counts = torch.bincount(primary_votes)
+        vote_counts = torch.bincount(primary_votes, minlength=decisions.size(1))
         majority_vote = torch.argmax(vote_counts)
         majority_count = vote_counts[majority_vote]
         if majority_count > n / 2:
-            positive_voters = decisions[:, majority_vote] > 0
-            activation_value = decisions[positive_voters, majority_vote].mean()
+            positive_voters = filtered_decisions[:, majority_vote] > 0
+            activation_value = filtered_decisions[positive_voters, majority_vote].mean()
             return majority_vote.item(), activation_value.item()
+
         return 1, 1.0
+

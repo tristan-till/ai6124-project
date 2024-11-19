@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from ta.trend import EMAIndicator
-import utils.indicators as indicators
+import ai6124_project.utils.indicators as indicators
 
 class Signal:
     def generate_signal(self, prices):

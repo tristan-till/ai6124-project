@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader, TensorDataset, Subset, random_split
 
 import yfinance as yf
 
-import utils.indicators as indicators
-import utils.params as params
-import utils.correlation as corr
+import ai6124_project.utils.indicators as indicators
+import ai6124_project.utils.params as params
+import ai6124_project.utils.correlation as corr
 
 from ai6124_project.classes.dataset import TimeSeriesDataset
 

@@ -1,6 +1,7 @@
-import utils.data as data
-import utils.params as params
-from utils.backbone import get_backbone
+import ai6124_project.utils.signals as signals
+import ai6124_project.utils.data as data
+import ai6124_project.utils.params as params
+from ai6124_project.utils.backbone import get_backbone
 
 import yfinance as yf
 import torch
@@ -16,16 +17,16 @@ def get_prices(stock=params.TARGET):
 
 
 def get_predictions(
-    device, model_path=params.BEST_MODEL_PATH, model_loader=get_backbone
+    device, model_path=params.BEST_MODEL_PATH, model_loader=get_backbone, target=params.TARGET, supps=params.SUPP
 ):
-    dataset, num_features = data.prepare_data()
+    dataset, num_features = data.prepare_data(target=target, supps=supps)
     train_dataset, val_dataset, test_dataset = data.get_datasets(dataset)
     train_loader, val_loader, test_loader = data.get_dataloaders(
         train_dataset, val_dataset, test_dataset
     )
-    model, _, _ = model_loader(num_features, "cuda")
-    model.load_state_dict(torch.load(f"weights/{model_path}", weights_only=True))
-
+    model, _, _ = model_loader(num_features, device)
+    model.load_state_dict(torch.load(f"weights/{model_path}", weights_only=True, map_location=torch.device(device)))
+    model.eval()
     preds = []
 
     with torch.no_grad():
@@ -59,8 +60,6 @@ def other_data(stocks):
 
 
 def get_signals(others):
-    import utils.signals as signals
-
     X = []
     for other in others:
         prices = get_prices(other)

@@ -1,10 +1,10 @@
 import torch
 
-import utils.data as data
-import utils.evo_data as evo_data
-import utils.params as params
-import utils.objectives as objectives
-from utils.baseline import get_baseline
+import ai6124_project.utils.data as data
+import ai6124_project.utils.evo_data as evo_data
+import ai6124_project.utils.params as params
+import ai6124_project.utils.objectives as objectives
+from ai6124_project.utils.baseline import get_baseline
 
 from train_baseline import train_baseline
 from test_baseline import test_baseline

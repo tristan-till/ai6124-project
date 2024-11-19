@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-import utils.params as params 
+import ai6124_project.utils.params as params 
+from ai6124_project.classes.attention import AttentionLayer
 
 class GRULSTMAttentionModel(nn.Module):
     def __init__(self, input_size, 

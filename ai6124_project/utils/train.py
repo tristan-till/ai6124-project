@@ -3,7 +3,7 @@ from torch.utils.data import ConcatDataset, Subset, DataLoader
 from sklearn.model_selection import KFold
 import os
 
-import utils.params as params
+import ai6124_project.utils.params as params
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, device, 
                 best_model_path=params.BEST_MODEL_PATH, last_model_path=params.LAST_MODEL_PATH, 
@@ -49,8 +49,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device,
         val_loss /= len(val_loader)
         
         print(f'\nEpoch {epoch+1}/{num_epochs}:')
-        print(f'Training Loss: {train_loss:.4f}')
-        print(f'Validation Loss: {val_loss:.4f}')
+        print(f'\tTraining Loss: {train_loss:.4f}')
+        print(f'\tValidation Loss: {val_loss:.4f}')
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss

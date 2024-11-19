@@ -4,10 +4,10 @@ import itertools
 import numpy as np
 import torch
 
-import utils.helpers as helpers
+import ai6124_project.utils.helpers as helpers
 import ai6124_project.utils.evo_utils as evo_utils
-import utils.params as params
-import utils.benchmark as benchmark
+import ai6124_project.utils.params as params
+import ai6124_project.utils.linguistics as linguistics
 
 class GenFIS:
     def __init__(self, device, num_inputs, mutation_rate=params.MUTATION_RATE, rule_operator=lambda x: max(x)):
@@ -28,8 +28,10 @@ class GenFIS:
 
         self.rule_op = rule_operator
                 
+        self.out_mfs_linspace = torch.zeros((self.num_outputs, self.num_in_mfs, params.NUM_POINTS)).to(device)
         self.set_in_mfs()
         self.set_out_mfs()
+        
         
     def set_in_mf_params(self, in_mf_params):
         assert in_mf_params.shape == self.in_mf_params.shape
@@ -55,7 +57,15 @@ class GenFIS:
         self.in_mfs = [helpers.get_trimfs(params, self.device) for params in self.in_mf_params]
         
     def set_out_mfs(self):
-        self.out_mfs = [helpers.get_trimfs(params, self.device) for params in self.out_mf_params]
+        self.out_mfs = np.array([helpers.get_trimfs(params, self.device) for params in self.out_mf_params], dtype=object)
+        self.set_out_mfs_linspace()
+        
+    def set_out_mfs_linspace(self):
+        x = torch.linspace(0, 1, params.NUM_POINTS, device=self.device)
+        for mf_set in self.out_mfs:
+            for mf in mf_set:
+                for i in range(params.NUM_POINTS):
+                    self.out_mfs_linspace[:, :, i] = mf(x[i])
         
     def fuzzify(self, inputs):
         inputs = inputs.clone().detach().to(self.device)
@@ -77,7 +87,7 @@ class GenFIS:
         return ra
     
     def defuzzify(self, ra):
-        centroids = helpers.centroids(self.out_mfs, ra, self.consequences, self.device)
+        centroids = helpers.centroids(self.out_mfs, self.out_mfs_linspace, ra, self.consequences, self.device)
         return centroids
         
     def forward(self, inputs):
@@ -122,23 +132,18 @@ class GenFIS:
     def load_genome(self, path=params.BEST_GENOME_PATH):
         genome = helpers.load_genome(path)
         self.set_genome(genome)
-    
-    def benchmark_genome(self):
-        genome = benchmark.benchmark_genome()
-        self.set_genome(genome)
 
     def explain(self):
         rules = self.rules
         cons = torch.rot90(self.consequences, 3).flip(1)
         text = ""
-        ling_term = ["small", "medium", "large"]
-        out_terms = ["sell", "hold", "buy"]
+        
         for i in range(self.num_rules):
             text += f"Rule {i+1}: If "
-            rs = [f"x{j+1} is {ling_term[r.item()]}" for j, r in enumerate(rules[i])]
+            rs = [f"{linguistics.IN_TERMS[j]} is {linguistics.SIZE_TERMS[r.item()]}" for j, r in enumerate(rules[i])]
             text += " AND ".join(rs)
             text += " then "
-            cs = [f"{out_terms[j]} is {ling_term[c.item()]}" for j, c in enumerate(cons[i])]
+            cs = [f"{linguistics.OUT_TERMS[j]} is {linguistics.SIZE_TERMS[c.item()]}" for j, c in enumerate(cons[i])]
             text += " AND ".join(cs)
             text += "\n"
         print(text)

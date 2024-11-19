@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-import utils.params as params
+import ai6124_project.utils.params as params
 
 plot_lock = Lock()
 

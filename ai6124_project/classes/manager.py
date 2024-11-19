@@ -3,9 +3,9 @@ import torch
 
 from ai6124_project.classes.fis import GenFIS
 
-import utils.params as params
-import utils.enums as enums
-import utils.objectives as objectives
+import ai6124_project.utils.params as params
+import ai6124_project.utils.enums as enums
+import ai6124_project.utils.objectives as objectives
 
 class PortfolioManager:
     def __init__(self, device, num_inputs, cash=params.INITIAL_CASH, stocks=params.INITIAL_STOCKS, transaction_fee=params.TRANSACTION_FEE, rule_operator=lambda x: sum(x) / len(x), mode=enums.Mode.TRAIN):
@@ -38,7 +38,6 @@ class PortfolioManager:
         sell = actions[0]
         hold = actions[1]
         buy = actions[2]
-
         if buy > hold and buy > sell:
             amount = torch.floor(self.cash * buy / price).to(torch.int32)
             self.buy(amount, price)

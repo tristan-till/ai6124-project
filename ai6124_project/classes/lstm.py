@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-import utils.params as params
+import ai6124_project.utils.params as params
 
 class LSTMModel(nn.Module):
     def __init__(self, input_size=30, hidden_size=params.BASELINE_HIDDEN_SIZE, num_layers=params.BASELINE_HIDDEN_LAYERS):

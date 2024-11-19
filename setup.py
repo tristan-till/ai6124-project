@@ -5,7 +5,7 @@ setup(
     version="0.1.0",  # Semantic versioning: major.minor.patch
     author="Goyal Hitesh & Tristan Till",  # Your name
     author_email="TR0001LL@e.ntu.edu.sg",  # Your email
-    description="A project for AI6124 - GRU-LSTM-Attention AMO-GenFIS", 
+    description="A project for AI6124 - GRU-LSTM-Attention MO-GenFIS", 
     long_description=open("README.md").read(),  
     long_description_content_type="text/markdown",  
     url="https://github.com/tristan-till/ai6124-project.git",

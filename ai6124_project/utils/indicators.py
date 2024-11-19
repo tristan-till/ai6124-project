@@ -3,7 +3,7 @@ from ta.trend import MACD, EMAIndicator, SMAIndicator
 from ta.volatility import BollingerBands
 import numpy as np
 
-from classes.vrsi_indicator import VRSIIndicator
+from ai6124_project.classes.vrsi_indicator import VRSIIndicator
 
 def get_rsi(close, window):
     rsi = RSIIndicator(close, window)
